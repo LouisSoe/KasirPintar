@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="filterByCategory">
+        <item>Semua</item>
+        <item>Makanan</item>
+        <item>Kesehatan</item>
+        <item>Bumbu Masakan</item>
+        <item>Makanan</item>
+    </string-array>
+    <string-array name="filterByStatus">
+        <item>Semua</item>
+        <item>Tersedia</item>
+        <item>Stok Kosong</item>
+    </string-array>
+    <string-array name="filterByProduk">
+        <item>Sering Dibeli</item>
+        <item>Produk Terbaru</item>
+        <item>A -> Z</item>
+        <item>Z -> A</item>
+    </string-array>
+</resources>

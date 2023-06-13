@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Kasir Pintar</string>
+    <string name="apiKey">https://b47d-2001-448a-5122-70d0-342a-6166-99f3-6590.ngrok-free.app</string>
+</resources>
