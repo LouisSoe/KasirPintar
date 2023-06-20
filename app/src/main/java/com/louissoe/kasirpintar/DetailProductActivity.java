@@ -120,11 +120,11 @@ public class DetailProductActivity extends AppCompatActivity {
         String id =  getIntent().getStringExtra("id");
         String scannedBarcode = getIntent().getStringExtra("barcode");
         if(scannedBarcode != null){
-            finalUrl = pubs.apiUrl() + "api/getitembybarcode?barcode" +scannedBarcode;
+            finalUrl = pubs.apiUrl() + "api/getitembybarcode?barcode=" +scannedBarcode;
         }else if(id != null){
             finalUrl = pubs.apiUrl() + "api/databarang/" +id;
         }
-
+        Log.e("url", finalUrl);
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, finalUrl, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
