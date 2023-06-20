@@ -1,8 +1,12 @@
 package com.louissoe.kasirpintar;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,30 +29,37 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.louissoe.kasirpintar.Fragment.Admin.ProductFragment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FormProduct extends AppCompatActivity {
 
     Spinner in_kategory;
     Button action;
     Switch in_status;
-    EditText in_nama, in_harga, in_barcode, in_stok;
-    String id, nama, harga, barcode, stok, kategory, status, kat_nama, kat_id, selectedId, fixedUrl;
+    EditText in_nama, in_harga, in_barcode, in_stok, in_beli;
+    String id, nama, harga, beli,barcode, stok, kategory, status, kat_nama, kat_id, selectedId, fixedUrl, token;
     int reqMethod;
-    String apiKey = "https://9b99-103-189-201-211.ngrok-free.app/";
-    private ArrayList<String> nameList, idList;
-    private ArrayAdapter<String> spinnerAdapter;
+    SharedPreferences pref;
+    PubClass pubs = new PubClass();
+     ArrayList<String> nameList = new ArrayList<>();
+    ArrayList<String>   idList = new ArrayList<>();
+    private ArrayAdapter<String> adapter;
     RequestQueue queue;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_form_product);
+
+        pref = getSharedPreferences("DataKasir", MODE_PRIVATE);
+        token = pref.getString("token", "");
 
         action = findViewById(R.id.btn_action);
         in_nama = findViewById(R.id.in_nama);
@@ -57,9 +68,9 @@ public class FormProduct extends AppCompatActivity {
         in_barcode = findViewById(R.id.in_barcode);
         in_kategory = findViewById(R.id.in_kategory);
         in_status = findViewById(R.id.in_status);
+        in_beli = findViewById(R.id.in_hargabeli);
         id = getIntent().getStringExtra("id");
 
-        getKategory();
         in_status.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -74,24 +85,114 @@ public class FormProduct extends AppCompatActivity {
             }
         });
 
+        getKategory();
+        validateMethod();
+
+
+        in_kategory.setOnItemSelectedListener(kategorySelected);
+
+        action.setOnClickListener(actionClicked);
+    }
+
+    AdapterView.OnItemSelectedListener kategorySelected = new AdapterView.OnItemSelectedListener() {
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            if(idList.isEmpty()){
+
+            }else {
+                in_kategory.setSelection(position);
+                selectedId = idList.get(position);
+            }
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {
+
+        }
+    };
+
+    View.OnClickListener actionClicked = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            queue = Volley.newRequestQueue(FormProduct.this);
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("nama_barang", in_nama.getText());
+                obj.put("stok", in_stok.getText());
+                obj.put("id_kategory", Integer.parseInt(selectedId));
+                obj.put("harga_barang", in_harga.getText());
+                obj.put("harga_pembelian", in_beli.getText());
+                obj.put("barcode", in_barcode.getText());
+                obj.put("status_barang", status);
+                obj.put("foto_barang", null);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+
+            StringRequest reqAct = new StringRequest(reqMethod, fixedUrl, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        JSONObject jsonResponse = new JSONObject(response);
+                        String message = jsonResponse.getString("message");
+                        if (message.equals("Success")) {
+                            showDialog("Berhasil Mengubah Data");
+                            finish();
+                        }
+
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    error.printStackTrace();
+                }
+            }){
+                @Override
+                public byte[] getBody() throws AuthFailureError {
+                    return obj.toString().getBytes();
+                }
+
+                @Override
+                public String getBodyContentType() {
+                    return "application/json";
+                }
+
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Authorization", "Bearer " + token);
+                    return headers;
+                }
+            };
+            queue.add(reqAct);
+        }
+    };
+    private void validateMethod() {
         if(!id.isEmpty()){
-            reqMethod = Request.Method.PATCH;
-            fixedUrl = apiKey + "api/databarang/" + id;
+            reqMethod = Request.Method.PUT;
+            fixedUrl = pubs.apiUrl() + "api/databarang/" + id;
 
             queue = Volley.newRequestQueue(FormProduct.this);
-            JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, apiKey + "api/databarang/" + id, null, new Response.Listener<JSONObject>() {
+            JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, fixedUrl, null, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
                         nama =  response.getString("nama_barang");
                         harga = response.getString("harga_barang");
+                        beli = response.getString("harga_pembelian");
                         stok = response.getString("stok");
                         kategory = response.getString("id_kategory");
+                        Log.e("data", kategory);
                         barcode = response.getString("barcode");
                         status = response.getString("status_barang");
 
                         in_nama.setText(nama);
                         in_harga.setText(harga);
+                        in_beli.setText(beli);
                         in_stok.setText(stok);
                         in_barcode.setText(barcode);
 
@@ -115,93 +216,44 @@ public class FormProduct extends AppCompatActivity {
                 public void onErrorResponse(VolleyError error) {
                     error.printStackTrace();
                 }
-            });
+            }){
+                @Override
+                public Map<String, String> getHeaders() throws AuthFailureError {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Authorization", "Bearer " + token);
+                    return headers;
+                }
+            };
             queue.add(req);
         }else{
             reqMethod = Request.Method.POST;
-            fixedUrl = apiKey + "api/databarang";
+            fixedUrl = pubs.apiUrl() + "api/databarang";
+
 
         }
-
-        in_kategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                 selectedId = idList.get(position);
-
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-
-        action.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                queue = Volley.newRequestQueue(FormProduct.this);
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put("nama_barang", in_nama.getText());
-                    obj.put("stok", in_stok.getText());
-                    obj.put("id_kategory", Integer.parseInt(selectedId));
-                    obj.put("harga_barang", in_harga.getText());
-                    obj.put("barcode", in_barcode.getText());
-                    obj.put("status_barang", "aktif");
-                    obj.put("foto_barang", null);
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
-
-                Log.e("data", obj.toString());
-                StringRequest req = new StringRequest(reqMethod, fixedUrl, new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.e("response", response);
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                    }
-                }){
-                    @Override
-                    public byte[] getBody() throws AuthFailureError {
-                        return obj.toString().getBytes();
-                    }
-
-                    @Override
-                    public String getBodyContentType() {
-                        return "application/json";
-                    }
-                };
-                queue.add(req);
-            }
-        });
     }
 
     private void getKategory() {
         queue = Volley.newRequestQueue(FormProduct.this);
-        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, apiKey + "api/kategory", null, new Response.Listener<JSONArray>() {
+        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, pubs.apiUrl() + "api/kategory", null, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
                 try {
-                    nameList = new ArrayList<>();
-                    idList = new ArrayList<>();
+                   nameList.clear();
+                   idList.clear();
                     for (int i = 0; i < response.length(); i++){
                         JSONObject obj = response.getJSONObject(i);
-                        kat_nama = obj.getString("nama_kategory");
+                        kat_nama = obj.optString("nama_kategory");
                         kat_id = String.valueOf(obj.getInt("id_kategory"));
                         nameList.add(kat_nama);
                         idList.add(kat_id);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(FormProduct.this, android.R.layout.simple_spinner_item, nameList);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        in_kategory.setAdapter(adapter);
                     }
 
-                    spinnerAdapter = new ArrayAdapter<>(FormProduct.this, android.R.layout.simple_spinner_item,nameList);
-                    spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    in_kategory.setAdapter(spinnerAdapter);
-
                 } catch (JSONException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
             }
         }, new Response.ErrorListener() {
@@ -209,8 +261,29 @@ public class FormProduct extends AppCompatActivity {
             public void onErrorResponse(VolleyError error) {
                 error.printStackTrace();
             }
-        });
+        }){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", "Bearer " + token);
+                return headers;
+            }
+        };
         queue.add(req);
-
     }
+    void showDialog(String message){
+        AlertDialog.Builder build = new AlertDialog.Builder(FormProduct.this);
+        build.setTitle("Pesan");
+        build.setMessage(message);
+        build.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        AlertDialog dialog = build.create();
+        dialog.show();
+    }
+
 }

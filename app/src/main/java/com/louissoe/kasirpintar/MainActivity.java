@@ -6,6 +6,8 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.app.Dialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -17,9 +19,9 @@ import android.view.Window;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.louissoe.kasirpintar.Adapter.HomeFragment;
-import com.louissoe.kasirpintar.Fragment.DataFragment;
-import com.louissoe.kasirpintar.Fragment.User.ProductFragment;
+import com.louissoe.kasirpintar.Fragment.HomeFragment;
+import com.louissoe.kasirpintar.Fragment.Admin.CategoryFragment;
+import com.louissoe.kasirpintar.Fragment.Admin.ProductFragment;
 import com.louissoe.kasirpintar.Fragment.StatisticFragment;
 import com.louissoe.kasirpintar.databinding.ActivityMainBinding;
 
@@ -28,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
                     changeContent(new ProductFragment());
                     break;
                 case R.id.cart:
-                    changeContent(new DataFragment());
+                    changeContent(new CategoryFragment());
                     break;
             }
             return true;

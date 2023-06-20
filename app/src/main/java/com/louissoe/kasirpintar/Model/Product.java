@@ -11,16 +11,12 @@ public class Product{
     public String harga_barang;
     public String foto_barang;
 
-    public Product(String id_barang, String nama_barang, String stok, int id_kategory, String nama_kategory, String status_barang, String barcode, String harga_barang, String foto_barang) {
+    public Product(String id_barang, String nama_barang, String stok, String status_barang, String harga_barang) {
         this.id_barang = id_barang;
         this.nama_barang = nama_barang;
         this.stok = stok;
-        this.id_kategory = id_kategory;
-        this.nama_kategory = nama_kategory;
         this.status_barang = status_barang;
-        this.barcode = barcode;
         this.harga_barang = harga_barang;
-        this.foto_barang = foto_barang;
     }
 
     public String getId_barang() {

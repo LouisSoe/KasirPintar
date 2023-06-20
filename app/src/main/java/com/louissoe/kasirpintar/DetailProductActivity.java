@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -19,25 +21,37 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.louissoe.kasirpintar.Fragment.User.ProductFragment;
+import com.louissoe.kasirpintar.Fragment.Admin.ProductFragment;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class DetailProductActivity extends AppCompatActivity {
 
     RequestQueue queue;
     TextView product_name, product_price, product_stok, product_kategory;
     Button edit, delete;
-    String nama, harga, stok, kategory, id_barang;
-    String apiKey = "https://9b99-103-189-201-211.ngrok-free.app/";
+    String nama, harga, stok, kategory, id_barang, token, finalUrl;
+    SharedPreferences pref;
+    PubClass pubs = new PubClass();
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getData();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_detail_product);
+
+        pref = getSharedPreferences("DataKasir", MODE_PRIVATE);
+        token = pref.getString("token", "");
+
         product_name = findViewById(R.id.product_name);
         product_price = findViewById(R.id.product_price);
         product_stok = findViewById(R.id.product_stock);
@@ -65,7 +79,7 @@ public class DetailProductActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         queue =  Volley.newRequestQueue(DetailProductActivity.this);
-                        StringRequest req = new StringRequest(Request.Method.DELETE, apiKey + "api/databarang/" + id_barang, new Response.Listener<String>() {
+                        StringRequest req = new StringRequest(Request.Method.DELETE, pubs.apiUrl() + "api/databarang/" + id_barang, new Response.Listener<String>() {
                             @Override
                             public void onResponse(String response) {
                                 Toast.makeText(DetailProductActivity.this, "Berhasil Menghapus Data", Toast.LENGTH_SHORT).show();
@@ -76,7 +90,14 @@ public class DetailProductActivity extends AppCompatActivity {
                             public void onErrorResponse(VolleyError error) {
                                 error.printStackTrace();
                             }
-                       });
+                       }){
+                            @Override
+                            public Map<String, String> getHeaders() throws AuthFailureError {
+                                Map<String, String> headers = new HashMap<>();
+                                headers.put("Authorization", "Bearer " + token);
+                                return headers;
+                            }
+                        };
                         queue.add(req);
                     }
                 });
@@ -92,10 +113,19 @@ public class DetailProductActivity extends AppCompatActivity {
         });
 
     }
+
+
     void getData(){
         queue = Volley.newRequestQueue(this);
         String id =  getIntent().getStringExtra("id");
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, apiKey + "api/databarang/" + id, null, new Response.Listener<JSONObject>() {
+        String scannedBarcode = getIntent().getStringExtra("barcode");
+        if(scannedBarcode != null){
+            finalUrl = pubs.apiUrl() + "api/getitembybarcode?barcode" +scannedBarcode;
+        }else if(id != null){
+            finalUrl = pubs.apiUrl() + "api/databarang/" +id;
+        }
+
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, finalUrl, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
 
@@ -106,7 +136,12 @@ public class DetailProductActivity extends AppCompatActivity {
                     stok = response.getString("stok");
                     kategory = response.getString("nama_kategory");
                     product_name.setText(nama);
-                    product_price.setText(harga);
+
+                    Log.e("data", response.toString());
+
+                    String newHarga = pubs.hargaFormat(Integer.parseInt(harga));
+
+                    product_price.setText("Rp. " +newHarga);
                     product_stok.setText(stok + " Tersisa");
                     product_kategory.setText(kategory);
 
@@ -120,7 +155,14 @@ public class DetailProductActivity extends AppCompatActivity {
             public void onErrorResponse(VolleyError error) {
                 error.printStackTrace();
             }
-        });
+        }){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", "Bearer " + token);
+                return headers;
+            }
+        };
         queue.add(req);
     }
 }
